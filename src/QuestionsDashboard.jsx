@@ -18,7 +18,7 @@ import {
   createProductAPI,
   updateProductAPI,
   deleteProductAPI,
-  getcatgory, // 🚀 UPDATED: Using your specific explicit categories fetch handler API
+  getcatgory, 
   createCategoryAreaAPI,
   appendSubCategoryAPI,
   purgeCategoryAreaAPI,
@@ -28,7 +28,7 @@ import "./QuestionsDashboard.css";
 
 export default function QuestionsDashboard() {
   const [questions, setQuestions] = useState([]);
-  const [areas, setAreas] = useState([]); // Master state container sync with Area schema
+  const [areas, setAreas] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [areasLoading, setAreasLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -63,16 +63,18 @@ export default function QuestionsDashboard() {
     endTime: "",
   });
 
-  // Infinite Options Tracker Array
-  const [optionsList, setOptionsList] = useState(["", ""]);
+  // 🚀 FIXED: optionsList holds objects now to store both text and discrete rewardPercentage
+  const [optionsList, setOptionsList] = useState([
+    { optionText: "", rewardPercentage: 0 },
+    { optionText: "", rewardPercentage: 0 }
+  ]);
   const [winningOptionId, setWinningOptionId] = useState("");
-  const [rewardPercentage, setRewardPercentage] = useState(0);
 
   // Sync taxonomy classification frameworks using your brand new API target hook
   const loadAllAreas = async () => {
     try {
       setAreasLoading(true);
-      const res = await getcatgory(); // 🚀 CALLING YOUR EXACT DECLARED API HERE
+      const res = await getcatgory(); 
       if (res && res.success && res.data) {
         setAreas(res.data);
       }
@@ -145,20 +147,27 @@ export default function QuestionsDashboard() {
   }, [currentPage, totalPages]);
 
   // Handler to inject dynamic option inputs
-  const addOptionField = () => setOptionsList([...optionsList, ""]);
+  const addOptionField = () => setOptionsList([...optionsList, { optionText: "", rewardPercentage: 0 }]);
   const removeOptionField = (index) => {
     if (optionsList.length <= 2)
       return alert("A minimum of 2 option targets is required.");
     setOptionsList(optionsList.filter((_, idx) => idx !== index));
   };
+  
   const handleOptionTextChange = (index, value) => {
     const updated = [...optionsList];
-    updated[index] = value;
+    updated[index].optionText = value;
+    setOptionsList(updated);
+  };
+
+  const handleOptionRewardChange = (index, value) => {
+    const updated = [...optionsList];
+    updated[index].rewardPercentage = Number(value);
     setOptionsList(updated);
   };
 
   /* ==========================================================================
-     CATEGORIES & SUB-CATEGORIES INTERNAL DISPATCH OPERATIONAL FLOW HANDLERS
+      CATEGORIES & SUB-CATEGORIES INTERNAL DISPATCH OPERATIONAL FLOW HANDLERS
      ========================================================================== */
   const handleCreateCategoryContext = async (e) => {
     e.preventDefault();
@@ -241,12 +250,12 @@ export default function QuestionsDashboard() {
   };
 
   /* ==========================================================================
-     STANDARD PRODUCT QUESTION MANAGEMENT HANDLING ENGINE HOOKS
+      STANDARD PRODUCT QUESTION MANAGEMENT HANDLING ENGINE HOOKS
      ========================================================================== */
   const handleCreateQuestion = async (e) => {
     e.preventDefault();
 
-    if (optionsList.some((opt) => !opt.trim())) {
+    if (optionsList.some((opt) => !opt.optionText.trim())) {
       return alert(
         "Please fill out or remove all blank option input elements.",
       );
@@ -258,15 +267,18 @@ export default function QuestionsDashboard() {
     }
 
     try {
+      // 🚀 PAYLOAD MATCHES NEW SCHEMA RULES: Options map handles text + discrete percentage directly
       const payload = {
         question: newQuestion.question,
         category: newQuestion.category,
         subCategory: newQuestion.subCategory,
         language: newQuestion.language,
-        options: optionsList.map((opt) => ({ optionText: opt.trim() })),
+        options: optionsList.map((opt) => ({ 
+          optionText: opt.optionText.trim(),
+          rewardPercentage: Number(opt.rewardPercentage || 0)
+        })),
         initialThreshold: Number(newQuestion.initialThreshold),
         maxInvestment: Number(newQuestion.maxInvestment),
-        rewardPercentage: Number(rewardPercentage),
         intervalTime: 0,
         endTime: new Date(newQuestion.endTime).toISOString(),
       };
@@ -284,9 +296,12 @@ export default function QuestionsDashboard() {
           maxInvestment: 20000,
           endTime: "",
         });
-        setOptionsList(["", ""]);
+        setOptionsList([
+          { optionText: "", rewardPercentage: 0 },
+          { optionText: "", rewardPercentage: 0 }
+        ]);
         loadAllQuestions();
-        loadAllAreas(); // Reload areas to update item counts smoothly
+        loadAllAreas(); 
       } else {
         alert(
           result.message || "Failed to instantiate product question template.",
@@ -297,7 +312,6 @@ export default function QuestionsDashboard() {
     }
   };
 
-  // 🚀 FIXED FUNCTION: Safely isolates question deletion without touching categories structures
   const handleDeleteQuestion = async (id, text) => {
     if (
       !window.confirm(
@@ -309,9 +323,8 @@ export default function QuestionsDashboard() {
       const res = await deleteProductAPI(id);
       if (res.success) {
         alert("Question deleted successfully from database logs.");
-        // React State updates locally to avoid full page re-fetching lags
         setQuestions((prev) => prev.filter((item) => item._id !== id));
-        loadAllAreas(); // Refresh area tree counts perfectly
+        loadAllAreas(); 
       } else {
         alert(
           res.message || "Deletion sequence rejected by backend controller.",
@@ -334,6 +347,8 @@ export default function QuestionsDashboard() {
       return alert("Please select a verified winning option node.");
 
     try {
+      // 🚀 MATCHES ACCELERATED SETTLEMENT ENG: Pass winning option ID. 
+      // The backend reads option.rewardPercentage autonomously from the subdocument.
       const response = await fetch(
         `${API_BASE_URL}api/products/declare-result/${selectedQuestion._id}`,
         {
@@ -365,12 +380,10 @@ export default function QuestionsDashboard() {
         <header className="dashboard-action-top-bar">
           <div className="bar-left-meta">
             <h2>
-              <HelpCircle className="title-icon-blue" /> Question Operations
-              Desk
+              <HelpCircle className="title-icon-blue" /> Question Operations Desk
             </h2>
             <p>
-              Initialize, update, settle, and audit multi-option prediction
-              parameters
+              Initialize, update, settle, and audit multi-option prediction parameters
             </p>
           </div>
           <div
@@ -381,8 +394,7 @@ export default function QuestionsDashboard() {
               className="dashboard-add-pill-btn secondary-grey-variant"
               onClick={() => setShowManageAreasModal(true)}
             >
-              <Settings size={16} style={{ marginRight: 6 }} /> Manage
-              Categories Hub
+              <Settings size={16} style={{ marginRight: 6 }} /> Manage Categories Hub
             </button>
             <button
               className="dashboard-add-pill-btn"
@@ -468,19 +480,13 @@ export default function QuestionsDashboard() {
             <div className="dashboard-empty-state-card">
               <p>
                 No active prediction contracts found registered under the "
-                {activeTab} {activeSubTab !== "All" ? `> ${activeSubTab}` : ""}"
-                classification filter.
+                {activeTab} {activeSubTab !== "All" ? `> ${activeSubTab}` : ""}" classification filter.
               </p>
             </div>
           ) : (
             <>
               <div className="dashboard-pagination-summary">
-                Showing {paginatedQuestions.length} of{" "}
-                {filteredQuestions.length} entries under{" "}
-                <b>
-                  {activeTab}{" "}
-                  {activeSubTab !== "All" ? `> ${activeSubTab}` : ""}
-                </b>
+                Showing {paginatedQuestions.length} of {filteredQuestions.length} entries under <b>{activeTab} {activeSubTab !== "All" ? `> ${activeSubTab}` : ""}</b>
               </div>
               <div className="dashboard-linear-tiles-list">
                 {paginatedQuestions.map((item) => (
@@ -491,12 +497,9 @@ export default function QuestionsDashboard() {
                     <div className="tile-left-metadata">
                       <div className="tile-badge-strip">
                         <span className="badge-category">
-                          <Layers size={12} style={{ marginRight: 4 }} />{" "}
-                          {item.category} • {item.subCategory || "General"}
+                          <Layers size={12} style={{ marginRight: 4 }} /> {item.category} • {item.subCategory || "General"}
                         </span>
-                        <span
-                          className={`badge-status-pill ${item.status === "active" ? "status-active" : "status-closed"}`}
-                        >
+                        <span className={`badge-status-pill ${item.status === "active" ? "status-active" : "status-closed"}`}>
                           {item.status.toUpperCase()}
                         </span>
                         <span className="badge-lang-tag">
@@ -508,24 +511,13 @@ export default function QuestionsDashboard() {
                       </h3>
 
                       <div className="tile-options-count-badge">
-                        🔢 Pool Stack contains {item.options?.length || 0}{" "}
-                        Option Nodes
+                        🔢 Pool Stack contains {item.options?.length || 0} Option Nodes
                       </div>
 
                       <div className="tile-volume-metrics-footer">
-                        <span>
-                          Pool Stake Value: <b>₹{item.totalInvestment || 0}</b>
-                        </span>
-                        <span>
-                          Participants:{" "}
-                          <b>{item.totalParticipants || 0} Nodes</b>
-                        </span>
-                        <span>
-                          Ends:{" "}
-                          <b>
-                            {new Date(item.endTime).toLocaleDateString("en-IN")}
-                          </b>
-                        </span>
+                        <span>Pool Stake Value: <b>₹{item.totalInvestment || 0}</b></span>
+                        <span>Participants: <b>{item.totalParticipants || 0} Nodes</b></span>
+                        <span>Ends: <b>{new Date(item.endTime).toLocaleDateString("en-IN")}</b></span>
                       </div>
                     </div>
 
@@ -559,9 +551,7 @@ export default function QuestionsDashboard() {
                 <button
                   type="button"
                   className="pagination-btn"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.max(1, prev - 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                   disabled={currentPage === 1}
                 >
                   Previous
@@ -572,9 +562,7 @@ export default function QuestionsDashboard() {
                 <button
                   type="button"
                   className="pagination-btn"
-                  onClick={() =>
-                    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                  }
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                   disabled={currentPage === totalPages}
                 >
                   Next
@@ -699,12 +687,10 @@ export default function QuestionsDashboard() {
                 </div>
               </div>
 
+              {/* 🚀 FIXED OPTION AREA: Text Input and discrete individual Reward Percentage Side-By-Side */}
               <div className="form-full-row dynamic-options-blueprint-area">
                 <div className="dynamic-options-headline-row">
-                  <label>
-                    Configure Option Target Matrix (Current Count:{" "}
-                    {optionsList.length})
-                  </label>
+                  <label>Configure Option Target Matrix (Current Count: {optionsList.length})</label>
                   <button
                     type="button"
                     className="btn-add-option-field"
@@ -715,25 +701,34 @@ export default function QuestionsDashboard() {
                 </div>
 
                 <div className="infinite-inputs-scroller-box">
-                  {optionsList.map((optionText, index) => (
-                    <div key={index} className="option-field-row-input">
-                      <span className="field-numerical-vector">
+                  {optionsList.map((opt, index) => (
+                    <div key={index} className="option-field-row-input" style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+                      <span className="field-numerical-vector" style={{ minWidth: "24px" }}>
                         #{index + 1}
                       </span>
                       <input
                         type="text"
                         required
-                        placeholder={`Enter option text value...`}
-                        value={optionText}
-                        onChange={(e) =>
-                          handleOptionTextChange(index, e.target.value)
-                        }
+                        style={{ flex: 2 }}
+                        placeholder={`Option String (e.g. Yes)`}
+                        value={opt.optionText}
+                        onChange={(e) => handleOptionTextChange(index, e.target.value)}
+                      />
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        style={{ flex: 1, minWidth: "110px" }}
+                        placeholder="Reward %"
+                        value={opt.rewardPercentage}
+                        onChange={(e) => handleOptionRewardChange(index, e.target.value)}
                       />
                       {optionsList.length > 2 && (
                         <button
                           type="button"
                           className="btn-delete-option-field"
                           onClick={() => removeOptionField(index)}
+                          style={{ padding: "8px", background: "none", border: "none", color: "#ef4444", cursor: "pointer" }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -772,17 +767,6 @@ export default function QuestionsDashboard() {
                     }
                   />
                 </div>
-              </div>
-              <div className="form-full-row">
-                <label>Reward Percentage (%)</label>
-                <input
-                  type="number"
-                  required
-                  min="0"
-                  value={rewardPercentage}
-                  onChange={(e) => setRewardPercentage(e.target.value)}
-                  placeholder="Set reward split ratio percentage for winning allocations..."
-                />
               </div>
 
               <div className="modal-actions-footer-row">
@@ -830,31 +814,18 @@ export default function QuestionsDashboard() {
                 marginTop: "1rem",
               }}
             >
-              {/* LEFT COLUMN: CREATION ENGINES CONTAINER FOR CATEGORY / SUBCATEGORIES */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "1.5rem",
-                }}
-              >
+              {/* LEFT COLUMN: CREATION ENGINES CONTAINER */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
                 {/* Form Section A: Create Category Root */}
                 <form
                   onSubmit={handleCreateCategoryContext}
                   className="limit-update-form"
-                  style={{
-                    background: "#f8fafc",
-                    border: "1px solid #cbd5e1",
-                    maxWidth: "100%",
-                  }}
+                  style={{ background: "#f8fafc", border: "1px solid #cbd5e1", maxWidth: "100%" }}
                 >
                   <h4 className="h4-title" style={{ color: "#1e3a8a" }}>
                     Create New Category
                   </h4>
-                  <div
-                    className="form-full-row"
-                    style={{ marginBottom: "10px" }}
-                  >
+                  <div className="form-full-row" style={{ marginBottom: "10px" }}>
                     <input
                       type="text"
                       required
@@ -865,10 +836,7 @@ export default function QuestionsDashboard() {
                       style={{ background: "#fff" }}
                     />
                   </div>
-                  <div
-                    className="form-full-row"
-                    style={{ marginBottom: "12px" }}
-                  >
+                  <div className="form-full-row" style={{ marginBottom: "12px" }}>
                     <input
                       type="text"
                       placeholder="Initial Sub-Category Title (Optional)"
@@ -891,29 +859,17 @@ export default function QuestionsDashboard() {
                 <form
                   onSubmit={handleAppendSubCategoryContext}
                   className="limit-update-form"
-                  style={{
-                    background: "#fdfdfd",
-                    border: "1px solid #cbd5e1",
-                    maxWidth: "100%",
-                  }}
+                  style={{ background: "#fdfdfd", border: "1px solid #cbd5e1", maxWidth: "100%" }}
                 >
                   <h4 className="h4-title" style={{ color: "#166534" }}>
                     Add Sub-Category to Existing
                   </h4>
-                  <div
-                    className="form-full-row"
-                    style={{ marginBottom: "10px" }}
-                  >
+                  <div className="form-full-row" style={{ marginBottom: "10px" }}>
                     <select
                       required
                       value={targetParentCategory}
                       onChange={(e) => setTargetParentCategory(e.target.value)}
-                      style={{
-                        padding: "8px 10px",
-                        width: "100%",
-                        borderRadius: "4px",
-                        border: "1px solid #cbd5e1",
-                      }}
+                      style={{ padding: "8px 10px", width: "100%", borderRadius: "4px", border: "1px solid #cbd5e1" }}
                     >
                       <option value="">-- Choose Target Parent --</option>
                       {areas.map((a) => (
@@ -923,10 +879,7 @@ export default function QuestionsDashboard() {
                       ))}
                     </select>
                   </div>
-                  <div
-                    className="form-full-row"
-                    style={{ marginBottom: "12px" }}
-                  >
+                  <div className="form-full-row" style={{ marginBottom: "12px" }}>
                     <input
                       type="text"
                       required
@@ -946,27 +899,9 @@ export default function QuestionsDashboard() {
                 </form>
               </div>
 
-              {/* RIGHT COLUMN: RENDER SCHEMAS TREE LIST WITH PURGE CONTROLS DELETES */}
-              <div
-                style={{
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "8px",
-                  padding: "1.25rem",
-                  maxHeight: "26rem",
-                  overflowY: "auto",
-                  background: "#ffffff",
-                }}
-              >
-                <h4
-                  style={{
-                    fontSize: "0.8125rem",
-                    textTransform: "uppercase",
-                    margin: "0 0 1rem 0",
-                    color: "#475569",
-                    fontWeight: "700",
-                    textAlign: "left",
-                  }}
-                >
+              {/* RIGHT COLUMN: RENDER SCHEMAS TREE LIST */}
+              <div style={{ border: "1px solid #e2e8f0", borderRadius: "8px", padding: "1.25rem", maxHeight: "26rem", overflowY: "auto", background: "#ffffff" }}>
+                <h4 style={{ fontSize: "0.8125rem", textTransform: "uppercase", margin: "0 0 1rem 0", color: "#475569", fontWeight: "700", textAlign: "left" }}>
                   Registered Classification Systems Trees
                 </h4>
 
@@ -975,114 +910,42 @@ export default function QuestionsDashboard() {
                     No categories loaded.
                   </p>
                 ) : (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "1rem",
-                    }}
-                  >
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                     {areas.map((area) => (
-                      <div
-                        key={area._id}
-                        style={{
-                          borderBottom: "1px solid #f1f5f9",
-                          paddingBottom: "10px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            background: "#f8fafc",
-                            padding: "6px 12px",
-                            borderRadius: "4px",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontWeight: "700",
-                              fontSize: "0.875rem",
-                              color: "#0f172a",
-                            }}
-                          >
+                      <div key={area._id} style={{ borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f8fafc", padding: "6px 12px", borderRadius: "4px" }}>
+                          <span style={{ fontWeight: "700", fontSize: "0.875rem", color: "#0f172a" }}>
                             📁 {area.Category}
                           </span>
                           <button
                             type="button"
-                            onClick={() =>
-                              handlePurgeCategoryContext(area.Category)
-                            }
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#ef4444",
-                              cursor: "pointer",
-                              padding: "4px",
-                            }}
+                            onClick={() => handlePurgeCategoryContext(area.Category)}
+                            style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "4px" }}
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
 
-                        <div
-                          style={{
-                            paddingLeft: "1.5rem",
-                            marginTop: "6px",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                          }}
-                        >
+                        <div style={{ paddingLeft: "1.5rem", marginTop: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
                           {area.SubCategory?.map((sub) => (
-                            <div
-                              key={sub._id}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                fontSize: "0.8125rem",
-                                color: "#475569",
-                                padding: "2px 0",
-                              }}
-                            >
+                            <div key={sub._id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.8125rem", color: "#475569", padding: "2px 0" }}>
                               <span>
                                 ↳ {sub.name}{" "}
-                                <span
-                                  style={{ fontSize: "10px", color: "#94a3b8" }}
-                                >
+                                <span style={{ fontSize: "10px", color: "#94a3b8" }}>
                                   ({sub.questions?.length || 0} items)
                                 </span>
                               </span>
                               <button
                                 type="button"
-                                onClick={() =>
-                                  handlePurgeSubCategoryContext(
-                                    area.Category,
-                                    sub.name,
-                                  )
-                                }
-                                style={{
-                                  background: "none",
-                                  border: "none",
-                                  color: "#94a3b8",
-                                  cursor: "pointer",
-                                }}
+                                onClick={() => handlePurgeSubCategoryContext(area.Category, sub.name)}
+                                style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
                               >
                                 <X size={12} />
                               </button>
                             </div>
                           ))}
-                          {(!area.SubCategory ||
-                            area.SubCategory.length === 0) && (
-                            <span
-                              style={{
-                                fontSize: "0.75rem",
-                                color: "#94a3b8",
-                                fontStyle: "italic",
-                              }}
-                            >
+                          {(!area.SubCategory || area.SubCategory.length === 0) && (
+                            <span style={{ fontSize: "0.75rem", color: "#94a3b8", fontStyle: "italic" }}>
                               No nested sub-nodes populated.
                             </span>
                           )}
@@ -1094,10 +957,7 @@ export default function QuestionsDashboard() {
               </div>
             </div>
 
-            <div
-              className="modal-actions-footer-row"
-              style={{ marginTop: "1rem" }}
-            >
+            <div className="modal-actions-footer-row" style={{ marginTop: "1rem" }}>
               <button
                 type="button"
                 className="btn-execute-modal"
@@ -1149,15 +1009,13 @@ export default function QuestionsDashboard() {
                   </option>
                   {selectedQuestion.options.map((opt) => (
                     <option key={opt._id} value={opt._id}>
-                      {opt.optionText}
+                      {opt.optionText} (Reward: {opt.rewardPercentage}%)
                     </option>
                   ))}
                 </select>
               </div>
               <div className="modal-warning-ledger-notice">
-                ⚠️ <b>CRITICAL SYSTEM WARNING:</b> Executing this operational
-                step instantly triggers full balance transfers to winning
-                wallets. This matrix operation cannot be rolled back.
+                ⚠️ <b>CRITICAL SYSTEM WARNING:</b> Executing this operational step instantly triggers full balance transfers to winning wallets based on the option's specific reward ratio. This matrix operation cannot be rolled back.
               </div>
               <div className="modal-actions-footer-row">
                 <button
